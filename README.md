@@ -3,6 +3,14 @@
 Attempt is a simple, fluent class for attempting to run code multiple times whilst handling exceptions. It attempts
 to mimic PHPs built-in try/catch syntax where possible but sprinkles in some additional magic on top.
 
+## Installation
+
+Attempt has been added to packagist and can be installed via composer:
+
+```
+composer require slashequip/attempt
+```
+
 ## Getting an instance
 
 Depending on your preference you can grab an Attempt instance in a couple of ways:
@@ -61,7 +69,17 @@ $valueThree = $attempt->try(function () {
 
 ### Times
 
-You can set the amount of times the Attempt should be made whilst an exception is being encountered.
+You can set the amount of times the Attempt should be made whilst an exception is being encountered [see catch](#catch).
+
+```php
+$valueOne = $attempt
+    ->try(function () {
+        throw new RuntimeException();
+    })
+    ->times(5)
+    ->thenReturn();
+// The above code would be run 5 times before throwing the RuntimeException
+````
 
 ### Catch
 
@@ -101,12 +119,25 @@ $attempt
     })
     ->thenReturn();
 
-// In this example; only one attempt would be made and a UnexpectedException would be thrown
+// In this example; the finally callback would be run before the UnexpectedException is thrown
 ```
 
 ### Wait Between
 
-The `waitBetween` method takes an integer indicating the desired number of milliseconds to wait between attempts.
+The `waitBetween` method takes an integer indicating the desired number of milliseconds to wait between attempts. The
+pause happens before the code runs but does not delay the starting of the Attempt.
+
+```php
+$attempt
+    ->try(function () use ($data) {
+        throw new UnexpectedException;
+    })
+    ->times(3)
+    ->waitBetween(250)
+    ->thenReturn();
+
+// In this example, there would be a pause of 250 milliseconds between each attempt.
+```
 
 ## Example use case
 
