@@ -1,0 +1,30 @@
+{
+    "name": "slashequip/attempt",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Sam Jones",
+            "email": "sam@slashequip.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php": "^7.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.0",
+        "pestphp/pest": "^0.2.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "SlashEquip\\Attempt\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SlashEquip\\Attempt\\Tests\\": "tests/"
+        }
+    }
+}
