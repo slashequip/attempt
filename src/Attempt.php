@@ -8,17 +8,15 @@ use Closure;
 
 class Attempt
 {
-    protected int $attempts = 0;
+    public function __construct(
+        protected ?Closure $try = null,
+        protected ?Closure $finally = null,
+        protected array $expects = [],
+        protected int $times = 1,
+        protected int $waitBetween = 0,
+        protected int $attempts = 0,
+    ) {}
 
-    protected int $times = 1;
-
-    protected int $waitBetween = 0;
-
-    protected ?Closure $try = null;
-
-    protected ?Closure $finally = null;
-
-    protected array $expects = [];
 
     public function __invoke(): mixed
     {
@@ -65,37 +63,57 @@ class Attempt
 
     public function catch(string $exceptionClass): static
     {
-        $this->expects[] = $exceptionClass;
-
-        return $this;
+        return new static(
+            $this->try,
+            $this->finally,
+            array_merge($this->expects, [$exceptionClass]),
+            $this->times,
+            $this->waitBetween,
+        );
     }
 
     public function times(int $times): static
     {
-        $this->times = $times;
-
-        return $this;
+        return new static(
+            $this->try,
+            $this->finally,
+            $this->expects,
+            $times,
+            $this->waitBetween,
+        );
     }
 
     public function try(callable $callback): static
     {
-        $this->try = $callback;
-
-        return $this;
+        return new static(
+            $callback,
+            $this->finally,
+            $this->expects,
+            $this->times,
+            $this->waitBetween,
+        );
     }
 
     public function finally(callable $callback): static
     {
-        $this->finally = $callback;
-
-        return $this;
+        return new static(
+            $this->try,
+            $callback,
+            $this->expects,
+            $this->times,
+            $this->waitBetween,
+        );
     }
 
     public function waitBetween(int $milliseconds): static
     {
-        $this->waitBetween = $milliseconds;
-
-        return $this;
+        return new static(
+            $this->try,
+            $this->finally,
+            $this->expects,
+            $this->times,
+            $milliseconds,
+        );
     }
 
     public function then(callable $callback): mixed
