@@ -1,5 +1,6 @@
 {
     "name": "slashequip/attempt",
+    "description": "Attempt is a simple, fluent class for attempting to run code multiple times whilst handling exceptions.",
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -31,5 +32,8 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true
         }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest"
     }
 }
