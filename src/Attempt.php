@@ -4,50 +4,23 @@ namespace SlashEquip\Attempt;
 
 use SlashEquip\Attempt\Exceptions\NoTryCallbackSetException;
 use Throwable;
+use Closure;
 
 class Attempt
 {
-    /**
-     * How many attempts have been made.
-     * @var int
-     */
-    protected $attempts = 0;
+    protected int $attempts = 0;
 
-    /**
-     * How many times should we attempt.
-     * @var int
-     */
-    protected $times = 1;
+    protected int $times = 1;
 
-    /** @var int|null */
-    protected $waitBetween;
+    protected int $waitBetween = 0;
 
-    /**
-     * The callback to attempt.
-     *
-     * @var callable
-     */
-    protected $try;
+    protected ?Closure $try = null;
 
-    /**
-     * A callback that always gets run.
-     *
-     * @var callable|null
-     */
-    protected $finally;
+    protected ?Closure $finally = null;
 
-    /**
-     * The exceptions we are expecting to see.
-     *
-     * @var array
-     */
-    protected $expects = [];
+    protected array $expects = [];
 
-    /**
-     * @return mixed
-     * @throws Throwable
-     */
-    public function __invoke()
+    public function __invoke(): mixed
     {
         $this->validate();
 
@@ -85,97 +58,56 @@ class Attempt
         }
     }
 
-    /**
-     * @return static
-     */
-    public static function make(): self
+    public static function make(): static
     {
         return new static();
     }
 
-    /**
-     * @param string $exceptionClass
-     *
-     * @return $this
-     */
-    public function catch(string $exceptionClass): self
+    public function catch(string $exceptionClass): static
     {
         $this->expects[] = $exceptionClass;
 
         return $this;
     }
 
-    /**
-     * @param int $times
-     *
-     * @return $this
-     */
-    public function times(int $times): self
+    public function times(int $times): static
     {
         $this->times = $times;
 
         return $this;
     }
 
-    /**
-     * @param callable $callback
-     *
-     * @return mixed
-     * @throws Throwable
-     */
-    public function try(callable $callback): self
+    public function try(callable $callback): static
     {
         $this->try = $callback;
 
         return $this;
     }
 
-    /**
-     * @param callable $callback
-     *
-     * @return $this
-     */
-    public function finally(callable $callback)
+    public function finally(callable $callback): static
     {
         $this->finally = $callback;
 
         return $this;
     }
 
-    /**
-     * @param int $milliseconds
-     *
-     * @return $this
-     */
-    public function waitBetween(int $milliseconds): self
+    public function waitBetween(int $milliseconds): static
     {
         $this->waitBetween = $milliseconds;
 
         return $this;
     }
 
-    /**
-     * @return mixed
-     * @throws Throwable
-     */
-    public function then(callable $callback)
+    public function then(callable $callback): mixed
     {
         return $callback($this->thenReturn());
     }
 
-    /**
-     * @return mixed
-     * @throws Throwable|NoTryCallbackSetException
-     */
-    public function thenReturn()
+    public function thenReturn(): mixed
     {
         return $this();
     }
 
-    /**
-     * @return void
-     * @throws NoTryCallbackSetException
-     */
     protected function validate(): void
     {
         if (!$this->try) {
@@ -183,31 +115,18 @@ class Attempt
         }
     }
 
-    /**
-     * @param $value
-     *
-     * @return mixed
-     */
-    protected function handleSuccess($value)
+    protected function handleSuccess($value): mixed
     {
         $this->runFinally();
         return $value;
     }
 
-    /**
-     * @param Throwable $e
-     *
-     * @throws Throwable
-     */
-    protected function handleException(Throwable $e)
+    protected function handleException(Throwable $e): void
     {
         $this->runFinally();
         throw $e;
     }
 
-    /**
-     * @return void
-     */
     protected function runFinally(): void
     {
         if ($this->finally) {
@@ -215,12 +134,8 @@ class Attempt
         }
     }
 
-    /**
-     * @return void
-     */
     protected function runWait(): void
     {
-        // If the user has defined a wait time and this isn't the first attempt.
         if ($this->waitBetween && $this->attempts > 1) {
             usleep($this->waitBetween * 1000);
         }

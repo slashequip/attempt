@@ -24,8 +24,8 @@ it('makes the attempt the expected number of times', function () {
         $exceptionThrown = true;
     }
 
-    assertTrue($exceptionThrown);
-    assertSame(3, $attempts);
+    $this->assertTrue($exceptionThrown);
+    $this->assertSame(3, $attempts);
 });
 
 it('will return early if the callback succeeds before the max attempts is reached', function () {
@@ -42,7 +42,7 @@ it('will return early if the callback succeeds before the max attempts is reache
         ->times(3)
         ->thenReturn();
 
-    assertSame(2, $attempts);
+    $this->assertSame(2, $attempts);
 });
 
 it('if expecting an exception it will throw if it encounters a different exception', function () {
@@ -67,7 +67,7 @@ it('will call final callback on success', function () {
         })
         ->thenReturn();
 
-    assertTrue($finallyCalled);
+    $this->assertTrue($finallyCalled);
 });
 
 it('will call final callback on exception', function () {
@@ -86,5 +86,5 @@ it('will call final callback on exception', function () {
         //
     }
 
-    assertTrue($finallyCalled);
+    $this->assertTrue($finallyCalled);
 });
