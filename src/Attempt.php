@@ -8,21 +8,25 @@ use Closure;
 
 class Attempt
 {
+    private int $attempts = 0;
+
     public function __construct(
         protected ?Closure $try = null,
         protected ?Closure $finally = null,
         protected array $expects = [],
-        protected int $times = 1,
-        protected int $waitBetween = 0,
-        protected int $attempts = 0,
-    ) {}
+        protected ?AttemptConfiguration $configuration = null
+    ) {
+        if (! $configuration) {
+            $this->configuration = new AttemptConfiguration;
+        }
+    }
 
 
     public function __invoke(): mixed
     {
         $this->validate();
 
-        while ($this->attempts < $this->times)
+        while ($this->attempts < $this->configuration->getTimes())
         {
             // Increase the attempt number.
             ++$this->attempts;
@@ -34,8 +38,8 @@ class Attempt
                 $result = ($this->try)();
             } catch (Throwable $e) {
                 // We have reached max number of attempts.
-                if ($this->attempts === $this->times) {
-                    $this->handleException($e);
+                if ($this->attempts === $this->configuration->getTimes()) {
+                    return $this->handleException($e);
                 }
 
                 // Not expecting specific exceptions so continue with loop.
@@ -49,7 +53,7 @@ class Attempt
                 }
 
                 // Nothing left to do but throw.
-                $this->handleException($e);
+                return $this->handleException($e);
             }
 
             return $this->handleSuccess($result);
@@ -67,19 +71,20 @@ class Attempt
             $this->try,
             $this->finally,
             array_merge($this->expects, [$exceptionClass]),
-            $this->times,
-            $this->waitBetween,
+            AttemptConfiguration::clone($this->configuration),
         );
     }
 
     public function times(int $times): static
     {
+        $configuration = AttemptConfiguration::clone($this->configuration);
+        $configuration->setTimes($times);
+
         return new static(
             $this->try,
             $this->finally,
             $this->expects,
-            $times,
-            $this->waitBetween,
+            $configuration,
         );
     }
 
@@ -89,8 +94,7 @@ class Attempt
             $callback,
             $this->finally,
             $this->expects,
-            $this->times,
-            $this->waitBetween,
+            AttemptConfiguration::clone($this->configuration),
         );
     }
 
@@ -100,19 +104,33 @@ class Attempt
             $this->try,
             $callback,
             $this->expects,
-            $this->times,
-            $this->waitBetween,
+            AttemptConfiguration::clone($this->configuration),
         );
     }
 
     public function waitBetween(int $milliseconds): static
     {
+        $configuration = AttemptConfiguration::clone($this->configuration);
+        $configuration->setWaitBetween($milliseconds);
+
         return new static(
             $this->try,
             $this->finally,
             $this->expects,
-            $this->times,
-            $milliseconds,
+            $configuration,
+        );
+    }
+
+    public function noThrow(): static
+    {
+        $configuration = AttemptConfiguration::clone($this->configuration);
+        $configuration->setShouldThrow(false);
+
+        return new static(
+            $this->try,
+            $this->finally,
+            $this->expects,
+            $configuration,
         );
     }
 
@@ -142,7 +160,10 @@ class Attempt
     protected function handleException(Throwable $e): void
     {
         $this->runFinally();
-        throw $e;
+
+        if ($this->configuration->getShouldThrow()) {
+            throw $e;
+        }
     }
 
     protected function runFinally(): void
@@ -154,8 +175,8 @@ class Attempt
 
     protected function runWait(): void
     {
-        if ($this->waitBetween && $this->attempts > 1) {
-            usleep($this->waitBetween * 1000);
+        if ($this->configuration->getWaitBetween() && $this->attempts > 1) {
+            usleep($this->configuration->getWaitBetween() * 1000);
         }
     }
 }

@@ -55,6 +55,17 @@ it('if expecting an exception it will throw if it encounters a different excepti
         ->thenReturn();
 })->throws(BadMethodCallException::class);
 
+it('will not throw an exception when no throw is set', function () {
+    $result = Attempt::make()
+        ->try(function () {
+            throw new BadMethodCallException();
+        })
+        ->noThrow()
+        ->thenReturn();
+
+    $this->assertNull($result);
+});
+
 it('will call final callback on success', function () {
     $finallyCalled = false;
 
