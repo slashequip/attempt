@@ -10,12 +10,15 @@ class AttemptConfiguration
 
     protected bool $shouldThrow = true;
 
+    protected array $expectations = [];
+
     public static function clone(AttemptConfiguration $configuration)
     {
         $clone = new AttemptConfiguration;
         $clone->setTimes($configuration->getTimes());
         $clone->setWaitBetween($configuration->getWaitBetween());
         $clone->setShouldThrow($configuration->getShouldThrow());
+        $clone->setExpectations($configuration->getExpectations());
 
         return $clone;
     }
@@ -48,5 +51,20 @@ class AttemptConfiguration
     public function getShouldThrow(): bool
     {
         return $this->shouldThrow;
+    }
+
+    public function setExpectations(array $expectations): void
+    {
+        $this->expectations = $expectations;
+    }
+
+    public function appendExpectation(string $exception, ?callable $callable = null): void
+    {
+        $this->expectations[$exception] = $callable;
+    }
+
+    public function getExpectations(): array
+    {
+        return $this->expectations;
     }
 }

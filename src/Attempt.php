@@ -13,7 +13,6 @@ class Attempt
     public function __construct(
         protected ?Closure $try = null,
         protected ?Closure $finally = null,
-        protected array $expects = [],
         protected ?AttemptConfiguration $configuration = null
     ) {
         if (! $configuration) {
@@ -21,13 +20,11 @@ class Attempt
         }
     }
 
-
     public function __invoke(): mixed
     {
         $this->validate();
 
-        while ($this->attempts < $this->configuration->getTimes())
-        {
+        while ($this->attempts < $this->configuration->getTimes()) {
             // Increase the attempt number.
             ++$this->attempts;
 
@@ -48,7 +45,7 @@ class Attempt
                 }
 
                 // This exception is something we expect to see.
-                if (in_array(get_class($e), $this->expects)) {
+                if ($this->expectsException($e)) {
                     continue;
                 }
 
@@ -65,13 +62,15 @@ class Attempt
         return new static();
     }
 
-    public function catch(string $exceptionClass): static
+    public function catch(string $exceptionClass, ?callable $callable = null): static
     {
+        $configuration = AttemptConfiguration::clone($this->configuration);
+        $configuration->appendExpectation($exceptionClass, $callable);
+
         return new static(
             $this->try,
             $this->finally,
-            array_merge($this->expects, [$exceptionClass]),
-            AttemptConfiguration::clone($this->configuration),
+            $configuration,
         );
     }
 
@@ -83,7 +82,6 @@ class Attempt
         return new static(
             $this->try,
             $this->finally,
-            $this->expects,
             $configuration,
         );
     }
@@ -93,7 +91,6 @@ class Attempt
         return new static(
             $callback,
             $this->finally,
-            $this->expects,
             AttemptConfiguration::clone($this->configuration),
         );
     }
@@ -103,7 +100,6 @@ class Attempt
         return new static(
             $this->try,
             $callback,
-            $this->expects,
             AttemptConfiguration::clone($this->configuration),
         );
     }
@@ -116,7 +112,6 @@ class Attempt
         return new static(
             $this->try,
             $this->finally,
-            $this->expects,
             $configuration,
         );
     }
@@ -129,7 +124,6 @@ class Attempt
         return new static(
             $this->try,
             $this->finally,
-            $this->expects,
             $configuration,
         );
     }
@@ -161,9 +155,28 @@ class Attempt
     {
         $this->runFinally();
 
-        if ($this->configuration->getShouldThrow()) {
-            throw $e;
+        if (! $this->configuration->getShouldThrow()) {
+            return;
         }
+
+        if ($handler = $this->getExceptionHandler($e)) {
+            $handler ? $handler($e) : null;
+            return;
+        }
+
+        throw $e;
+    }
+
+    protected function expectsException(Throwable $e)
+    {
+        return isset($this->configuration->getExpectations()[get_class($e)]);
+    }
+
+    protected function getExceptionHandler(Throwable $e): ?callable
+    {
+        return $this->expectsException($e)
+            ? $this->configuration->getExpectations()[get_class($e)]
+            : null;
     }
 
     protected function runFinally(): void
