@@ -33,9 +33,11 @@ Once you have your instance you can begin to build your Attempt.
 This is the only required method, the `try` method accepts a callable argument, the code that you want to run.
 
 ```php
-$attempt->try(function () {
-    // My code that may or may not work.
-})->thenReturn();
+$attempt
+    ->try(function () {
+        // My code that may or may not work.
+    })
+    ->thenReturn();
 ```
 
 ### Then Return
@@ -50,21 +52,26 @@ If it's your kind of jam, an attempt is also invokable which means at any point 
 
 ```php
 // $valueOne will be true
-$valueOne = $attempt->try(function () {
-    return true;
-})->thenReturn();
+$valueOne = $attempt
+    ->try(function () {
+        return true;
+    })
+    ->thenReturn();
 
 // $valueTwo will be false
-$valueTwo = $attempt->try(function () {
-    return true;
-})->then(function ($result) {
-    return !$result;
-});
+$valueTwo = $attempt
+    ->try(function () {
+        return true;
+    })
+    ->then(function ($result) {
+        return !$result;
+    });
 
 // $valueThree will be true
-$valueThree = $attempt->try(function () {
-    return true;
-})();
+$valueThree = $attempt
+    ->try(function () {
+        return true;
+    })();
 ```
 
 ### Times
@@ -79,17 +86,17 @@ $valueOne = $attempt
     ->times(5)
     ->thenReturn();
 // The above code would be run 5 times before throwing the RuntimeException
-````
+```
 
 ### Catch
 
-The `catch` method allows you to define exceptions you are expecting to encounter during the attempts, when 
+The `catch` method allows you to define exceptions you are expecting to encounter during the attempts, when
 exceptions have been passed to the catch method the Attempt will throw any other types of exceptions it
 comes across _early_ rather than performing all attempts.
 
 The `catch` method can be called multiple times to add multiple expected exceptions.
 
-_If you do no provide any expected exception via the `catch` method then the Attempt will ignore all exceptions
+_If you do not provide any expected exception via the `catch` method then the Attempt will ignore all exceptions
 until all attempts have been made._
 
 ```php
@@ -104,10 +111,41 @@ $attempt
 // In this example; only one attempt would be made and a UnexpectedException would be thrown
 ```
 
+The `catch` method also allows you to define a callback that will be called when the specified exception
+is eventually thrown. This can be useful for error logging or you could also return a default value
+if your code is to continue.
+
+```php
+$attempt
+    ->try(function () {
+        throw new AnExpectedException;
+    })
+    ->catch(AnExpectedException::class, function (AnExpectedException $e) {
+        error_log($e->getMessage());
+        return new NullBlogPost();
+    })
+    ->thenReturn();
+```
+
+### No Throw
+
+Attempt can be configured to never throw exceptions, there are situations when you want to execute some code but still
+continue with the rest of your logic. For these situations you can use `noThrow`.
+
+```php
+$attempt
+    ->try(function () {
+        throw new RuntimeException();
+    })
+    ->noThrow()
+    ->thenReturn();
+// The above exception would not bubble up and instead, simply, be swallowed.
+```
+
 ### Finally
 
 The `finally` method allows you to run a callback at the end of the attempt _no matter the result_, whether the attempt
-was successful or an exception was thrown the `finally` callback will be run.
+was successful or an exception was thrown the `finally` callback will always be run.
 
 ```php
 $attempt
@@ -147,14 +185,14 @@ use GuzzleHttp\Exception\ClientException;
 
 $blogPost = Attempt::make()
     ->try(function () use ($data) {
-        return \App\UnstableBlogApiServiceUsingGuzzle::post([
-           'data' => $data, 
+        return UnstableBlogApiServiceUsingGuzzle::post([
+           'data' => $data,
         ]);
     })
     ->times(3)
     ->waitBetween(250)
     ->catch(ClientException::class)
     ->then(function ($apiResponse) {
-        return \App\BlogPost::fromApiResponse($apiResponse);
+        return BlogPost::fromApiResponse($apiResponse);
     });
 ```
