@@ -191,7 +191,10 @@ $blogPost = Attempt::make()
     })
     ->times(3)
     ->waitBetween(250)
-    ->catch(ClientException::class)
+    ->catch(ClientException::class, function (ClientException $e) {
+        error_log("Unstable blog api service is causing issues again.")
+        return new BlogPost::nullableObject();
+    })
     ->then(function ($apiResponse) {
         return BlogPost::fromApiResponse($apiResponse);
     });
