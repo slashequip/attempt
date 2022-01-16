@@ -40,7 +40,7 @@ class Attempt
                 }
 
                 // Not expecting specific exceptions so continue with loop.
-                if (empty($this->expects)) {
+                if (empty($this->configuration->getExpectations())) {
                     continue;
                 }
 
@@ -145,23 +145,22 @@ class Attempt
         }
     }
 
-    protected function handleSuccess($value): mixed
+    protected function handleSuccess(mixed $value): mixed
     {
         $this->runFinally();
         return $value;
     }
 
-    protected function handleException(Throwable $e): void
+    protected function handleException(Throwable $e): mixed
     {
         $this->runFinally();
 
         if (! $this->configuration->getShouldThrow()) {
-            return;
+            return null;
         }
 
         if ($handler = $this->getExceptionHandler($e)) {
-            $handler ? $handler($e) : null;
-            return;
+            return $handler ? $handler($e) : null;
         }
 
         throw $e;

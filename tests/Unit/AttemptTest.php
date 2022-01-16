@@ -66,6 +66,22 @@ it('will not throw an exception when no throw is set', function () {
     $this->assertNull($result);
 });
 
+it('will run a catch callback when expected exception is thrown', function () {
+    $called = false;
+
+    $result = Attempt::make()
+        ->try(function () {
+            throw new AttemptTestException();
+        })
+        ->catch(AttemptTestException::class, function () use (&$called) {
+            $called = true;
+        })
+        ->thenReturn();
+
+    $this->assertNull($result);
+    $this->assertTrue($called);
+});
+
 it('will call final callback on success', function () {
     $finallyCalled = false;
 
